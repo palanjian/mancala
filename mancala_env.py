@@ -59,27 +59,29 @@ class MancalaEnv(gym.Env):
     def step(self, action):
         self.step_num += 1
         # (Try to) perform action
-        legal, next_player, target_rearched = self.mancala_game.move(self.current_player, action)
-        
-        # check if its illegal
-        if not legal:
-            return self.mancala_game.get_obs_for(self.current_player), -1, self.step_num > self.MAX_STEPS, False, {"current_player": self.current_player}
-        
-        # construct the observation space
-        obs = self.mancala_game.get_obs_for(self.current_player)
-
-        if(self.render_mode == 'human'):
-            self.render()
+        legal, next_player, terminal, won, scored = self.mancala_game.move(self.current_player, action)
 
         info = {"current_player": next_player}
         self.current_player = next_player
 
-        terminated = target_rearched or self.step_num > self.MAX_STEPS
+        # going to try to add "or not legal" just to see if it works
+        terminated = terminal or self.step_num > self.MAX_STEPS or not legal
 
-        reward = 1 
+        # construct the observation space
+        obs = self.mancala_game.get_obs_for(self.current_player)
 
+        reward = scored + 1 if won else scored 
+        if terminated and not won: reward -= 1
+
+        # check if its illegal
+        if(self.render_mode == 'human'):
+            self.render()
+        
         return obs, reward, terminated, False, info
     
     def render(self):
         pass
 
+    def get_action_mask(self):
+        """returns 6x1 boolean mask"""
+        return np.array([not self.mancala_game.is_illegal(self.current_player, i) for i in range(0, 6)], dtype=np.int8)

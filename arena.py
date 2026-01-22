@@ -10,70 +10,59 @@ env = MancalaEnv()
 p1 = DQNAgent("Peter")
 p2 = DQNAgent("Bob")
 
-EPISODES = 3000
-ROUNDS_PER_EP = 10
+EPISODES = 30000
 
 # exploration settings
 epsilon = 1
-EPSILON_DECAY = 0.99925
+EPSILON_DECAY = 0.998
 MIN_EPSILON = 0.01
 
-training_p1 = True
-
-p1_win_history = deque(maxlen=100)
-p1_pr = 0
+one_episode_behind = None
 
 for episode in tqdm(range(1, EPISODES+1), ascii=True, unit="episode"):
-    round = 0
+    # these are for the agent currently being trained
+    current_state, info = env.reset()
 
-    for round in range(0, ROUNDS_PER_EP):
-        if round >= ROUNDS_PER_EP//2:
-            training_p1 = not training_p1
-        
-        # these are for the agent currently being trained
-        current_state, info = env.reset()
+    done = False
+    while not done:            
+        current_player = info["current_player"]
 
-        done = False
-        while not done:            
-            current_player = info["current_player"]
-            agent = p1 if current_player == 1 else p2
+        agent = p1 if current_player == 1 else p2
 
-            if (training_p1 and current_player == 1) or (not training_p1 and current_player == 2):
-                # if this is the agent being trained -> explore
-                if np.random.random() > epsilon:
-                    action = np.argmax(agent.get_qs(current_state))
-                else:
-                    action = env.action_space.sample()
-            else:
-                # non training agent should just exploit
-                action = np.argmax(agent.get_qs(current_state))
-                
-            new_state, reward, terminal, _, info = env.step(action)
+        # get the valid actions for player (mask)
+        mask = env.get_action_mask()
 
-            if (training_p1 and current_player == 1) or (not training_p1 and current_player == 2):
-                #observation space, action, reward, new observation space, done or not
-                agent.update_replay_memory((current_state, action, reward, new_state, terminal))
-                agent.train(terminal)
+        # if we're the agent being trained & we're 'exploring'
+        if current_player == 1 and np.random.random() < epsilon:
+            action = env.action_space.sample(mask)
+
+        # non training agent should just exploit
+        else:     
+            qs = agent.get_qs(current_state) 
+            masked_qs = np.where(mask, qs, -np.inf)
+            action = np.argmax(masked_qs)
             
-            current_state = new_state
-            done = terminal
+        new_state, reward, terminal, _, info = env.step(action)
+
+        if (current_player == 1):
+            #observation space, action, reward, new observation space, done or not
+            agent.update_replay_memory((current_state, action, reward, new_state, terminal))
+            agent.train(terminal)
         
-        if current_player == 1 and reward == 1:
-            p1_win_history.append(1)
-        else: p1_win_history.append(0)
+        current_state = new_state
+        done = terminal
 
     if epsilon > MIN_EPSILON:
         epsilon *= EPSILON_DECAY
         epsilon = max(MIN_EPSILON, epsilon)
-        print(f"New epsilon: {epsilon}")
+        #print(f"New epsilon: {epsilon}")
     
+    # set p2's weights to p1's old weights 
+    if one_episode_behind: p2.model.set_weights(one_episode_behind)
+    one_episode_behind = p1.target_model.get_weights()
 
-    p1_win_rate = np.mean(p1_win_history)
-    print(f"P1 avg win rate (last 100): {p1_win_rate:.2f}")
 
-    if p1_win_rate > p1_pr:
-        print("Saving model as we have peaked in average win rate")
-        p1_pr = p1_win_rate
-        if os.path.exists("best.keras"):
-            os.remove("best.keras")
-        p1.model.save("best.keras")
+print("Saving model.")
+if os.path.exists("best.keras"):
+    os.remove("best.keras")
+p1.model.save("best.keras")

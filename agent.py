@@ -8,10 +8,10 @@ import numpy as np
 from keras.callbacks import TensorBoard
 
 REPLAY_MEMORY_SIZE = 50000
-MIN_REPLAY_MEMORY_SIZE = 25000
+MIN_REPLAY_MEMORY_SIZE = 2000
 MINIBATCH_SIZE = 32
-DISCOUNT_RATE = 0.99925
-UPDATE_TARGET_EVERY = 5000
+DISCOUNT_RATE = 0.98
+UPDATE_TARGET_EVERY = 1000
 MODEL_NAME="mancala"
 
 
@@ -52,7 +52,7 @@ class DQNAgent:
 
     def get_qs(self, state : np.array):
         # -1 on reshape means "figure out this dimension automatically"
-        return self.model.predict(state.reshape(-1, *state.shape), verbose=0)[0]
+        return self.model(state.reshape(-1, *state.shape), verbose=0)[0]
     
     def train(self, terminal_state, train_every=4):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -68,11 +68,11 @@ class DQNAgent:
         minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
 
         current_states = np.array([transition[0] for transition in minibatch])
-        current_qs_list = self.model.predict(current_states, verbose=0)
+        current_qs_list = self.model(current_states, verbose=0)
 
         # target model is updated less often to prevent instability (prevent from chasing its own moving predictions).
         new_current_states = np.array([transition[3] for transition in minibatch]) # new obs space
-        future_qs_list = self.target_model.predict(new_current_states, verbose=0)
+        future_qs_list = self.target_model(new_current_states, verbose=0)
 
         X = []
         y = []
@@ -84,7 +84,8 @@ class DQNAgent:
             else:
                 new_q = reward
             
-            current_qs = current_qs_list[index]
+            current_qs = current_qs_list[index].numpy()
+
             current_qs[action] = new_q
 
             X.append(current_state)
