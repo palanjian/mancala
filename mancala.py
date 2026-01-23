@@ -1,6 +1,8 @@
+from collections import deque
 import numpy as np
 class Mancala:
-    def __init__(self):
+    def __init__(self, seed=None):
+        self.rng = np.random.default_rng(seed)
         self.reset()
 
     def __str__(self):
@@ -16,7 +18,7 @@ class Mancala:
            | | [7] [8] [9] [10][11][12] |  |   >p2 goes this way
         ----------------------------------- 
         """ 
-        self.board = np.full((14,), 4) 
+        self.board = np.full((14,), self.rng.uniform(1, 6)) 
         self.board[6] = 0
         self.board[13] = 0
         self.steps = 0
@@ -96,7 +98,5 @@ class Mancala:
                 self.board[12-pos] = 0
 
         terminal, won = self.did_win(player)
-        if won: print("Won!")
-        elif terminal: print("Lost :(")
         
         return True, next_player, terminal, won, scored

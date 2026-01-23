@@ -1,3 +1,5 @@
 venv/
 tfvenv/
 __pycache__
+logs/
+*.keras

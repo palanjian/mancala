@@ -6,14 +6,20 @@ import random
 import tensorflow as tf
 import numpy as np
 from keras.callbacks import TensorBoard
+from keras.optimizers import Adam
 
 REPLAY_MEMORY_SIZE = 50000
 MIN_REPLAY_MEMORY_SIZE = 2000
-MINIBATCH_SIZE = 32
+MINIBATCH_SIZE = 64
 DISCOUNT_RATE = 0.98
 UPDATE_TARGET_EVERY = 1000
 MODEL_NAME="mancala"
 
+
+class RandomAgent:
+    def get_qs(self, state : np.array):
+        return np.random.choice(state)
+    
 
 class DQNAgent:
     def __init__(self, name="DQNAgent"):
@@ -36,13 +42,16 @@ class DQNAgent:
     def create_model(self):
         model = Sequential()
         model.add(Input(shape=(14,)))
+
         # Normalization layer necessary?
+        model.add(Dense(128, activation="relu"))
         model.add(Dense(64, activation="relu"))
         model.add(Dense(32, activation="relu"))
-        model.add(Dense(16, activation="relu"))
+
         model.add(Dense(6, activation="linear"))
 
-        model.compile(optimizer="adam", loss="mse", metrics=["accuracy"])
+        optimizer = Adam(learning_rate=0.00001, clipnorm=1.0)
+        model.compile(optimizer=optimizer, loss="mse", metrics=["accuracy"])
         model.summary()
         return model
     

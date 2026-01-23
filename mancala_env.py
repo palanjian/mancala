@@ -28,7 +28,7 @@ class MancalaEnv(gym.Env):
         # TODO: do we need to add the banks?
         self.observation_space = spaces.Box(
             low=0,
-            high=72,
+            high=48,
             shape = (14,),
             dtype=np.int32
         )
@@ -49,7 +49,7 @@ class MancalaEnv(gym.Env):
         obs = self.mancala_game.get_obs_for(self.current_player)
         
         #optional info to return
-        info = {"current_player": self.current_player}
+        info = {"current_player": self.current_player, "winner": None}
 
         if(self.render_mode == 'human'):
             self.render()
@@ -61,7 +61,12 @@ class MancalaEnv(gym.Env):
         # (Try to) perform action
         legal, next_player, terminal, won, scored = self.mancala_game.move(self.current_player, action)
 
-        info = {"current_player": next_player}
+        other = 2 if self.current_player == 1 else 1
+        info = {
+            "current_player": next_player, 
+            "winner": self.current_player if won else other
+        }
+
         self.current_player = next_player
 
         # going to try to add "or not legal" just to see if it works
@@ -70,8 +75,8 @@ class MancalaEnv(gym.Env):
         # construct the observation space
         obs = self.mancala_game.get_obs_for(self.current_player)
 
-        reward = scored + 1 if won else scored 
-        if terminated and not won: reward -= 1
+        reward = scored + 10 if won else scored 
+        if terminated and not won: reward -= 10
 
         # check if its illegal
         if(self.render_mode == 'human'):
