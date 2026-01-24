@@ -10,15 +10,18 @@ from keras.optimizers import Adam
 
 REPLAY_MEMORY_SIZE = 50000
 MIN_REPLAY_MEMORY_SIZE = 2000
-MINIBATCH_SIZE = 64
+MINIBATCH_SIZE = 32
 DISCOUNT_RATE = 0.98
 UPDATE_TARGET_EVERY = 1000
 MODEL_NAME="mancala"
 
 
 class RandomAgent:
+    def __init__(self):
+        self.rng = np.random.default_rng(seed=42)
+
     def get_qs(self, state : np.array):
-        return np.random.choice(state)
+        return self.rng.choice(state)
     
 
 class DQNAgent:
@@ -50,7 +53,7 @@ class DQNAgent:
 
         model.add(Dense(6, activation="linear"))
 
-        optimizer = Adam(learning_rate=0.0001, clipnorm=1.0)
+        optimizer = Adam(learning_rate=0.00001, clipnorm=1.0)
         model.compile(optimizer=optimizer, loss="mse", metrics=["accuracy"])
         model.summary()
         return model
@@ -61,7 +64,7 @@ class DQNAgent:
 
     def get_qs(self, state : np.array):
         # -1 on reshape means "figure out this dimension automatically"
-        return self.model(state.reshape(-1, *state.shape), verbose=0)[0]
+        return self.target_model(state.reshape(-1, *state.shape), verbose=0)[0]
     
     def train(self, terminal_state, train_every=1):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -93,6 +96,8 @@ class DQNAgent:
             else:
                 new_q = reward
             
+            if new_q > 10:
+                print("UNSTABLE Q! ", new_q)
             current_qs = current_qs_list[index].numpy()
 
             current_qs[action] = new_q
@@ -116,6 +121,6 @@ class DQNAgent:
             self.writer.flush()
 
         if self.target_update_counter > UPDATE_TARGET_EVERY:
-            print(f"Now setting target weights for agent: {self.name}")
+            #print(f"Now setting target weights for agent: {self.name}")
             self.target_model.set_weights(self.model.get_weights())
             self.target_update_counter = 0
