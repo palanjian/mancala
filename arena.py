@@ -65,7 +65,7 @@ def training_loop():
     
     # set p2's weights to p1's old weights 
     if previous_weights: p2.model.set_weights(previous_weights)
-    previous_weights = p1.target_model.get_weights()
+    previous_weights = p1.model.get_weights()
 
 
 def eval_loop():
@@ -89,7 +89,7 @@ def eval_loop():
             new_state, reward, terminal, _, info = env.step(action)
             current_state = new_state
             done = terminal
-        print(info)
+
         if info["winner"] == 1: wins += 1
     
     print(f"Evaluation win rate: {wins/EVAL_GAMES}")

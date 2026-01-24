@@ -44,13 +44,13 @@ class DQNAgent:
         model.add(Input(shape=(14,)))
 
         # Normalization layer necessary?
-        model.add(Dense(128, activation="relu"))
-        model.add(Dense(64, activation="relu"))
-        model.add(Dense(32, activation="relu"))
+        model.add(Dense(128, activation="tanh"))
+        model.add(Dense(64, activation="tanh"))
+        model.add(Dense(32, activation="tanh"))
 
         model.add(Dense(6, activation="linear"))
 
-        optimizer = Adam(learning_rate=0.00001, clipnorm=1.0)
+        optimizer = Adam(learning_rate=0.0001, clipnorm=1.0)
         model.compile(optimizer=optimizer, loss="mse", metrics=["accuracy"])
         model.summary()
         return model
@@ -63,7 +63,7 @@ class DQNAgent:
         # -1 on reshape means "figure out this dimension automatically"
         return self.model(state.reshape(-1, *state.shape), verbose=0)[0]
     
-    def train(self, terminal_state, train_every=4):
+    def train(self, terminal_state, train_every=1):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
             return
         

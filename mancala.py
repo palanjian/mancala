@@ -18,7 +18,7 @@ class Mancala:
            | | [7] [8] [9] [10][11][12] |  |   >p2 goes this way
         ----------------------------------- 
         """ 
-        self.board = np.full((14,), self.rng.uniform(1, 6)) 
+        self.board = np.full((14,), 4) 
         self.board[6] = 0
         self.board[13] = 0
         self.steps = 0
@@ -53,7 +53,6 @@ class Mancala:
         return p1_side == 0 or p2_side == 0, False
     
     def move(self, player, action):
-        scored = 0
 
         """
         only p1 should place on 6, and only p2 on 13
@@ -81,7 +80,6 @@ class Mancala:
 
         if (pos == 6 and player == 1) or (pos == 13 and player == 2):
             next_player = player
-            scored = 0.1
 
         # if you land on a pit with 0 marbles on it
         elif (player == 1 and pos in range(0,6) and self.board[pos] == 1) or \
@@ -89,7 +87,6 @@ class Mancala:
             num_in_adjacent = self.board[12-pos]
             #if there actual is something in there
             if num_in_adjacent: 
-                scored = 0.1 * num_in_adjacent 
 
                 if player == 1: self.board[6] += num_in_adjacent + 1
                 else: self.board[13] += num_in_adjacent + 1
@@ -99,4 +96,4 @@ class Mancala:
 
         terminal, won = self.did_win(player)
         
-        return True, next_player, terminal, won, scored
+        return True, next_player, terminal, won

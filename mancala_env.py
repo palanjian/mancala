@@ -59,7 +59,7 @@ class MancalaEnv(gym.Env):
     def step(self, action):
         self.step_num += 1
         # (Try to) perform action
-        legal, next_player, terminal, won, scored = self.mancala_game.move(self.current_player, action)
+        legal, next_player, terminal, won = self.mancala_game.move(self.current_player, action)
 
         other = 2 if self.current_player == 1 else 1
         info = {
@@ -67,17 +67,20 @@ class MancalaEnv(gym.Env):
             "winner": self.current_player if won else other
         }
 
-        self.current_player = next_player
-
         # going to try to add "or not legal" just to see if it works
         terminated = terminal or self.step_num > self.MAX_STEPS or not legal
 
+        reward = self.mancala_game.get_reward(self.current_player) * 0.03
+        if won: 
+            reward += 1
+        if terminated and not won: 
+            reward -= 2.5
+
+        self.current_player = next_player
+
         # construct the observation space
         obs = self.mancala_game.get_obs_for(self.current_player)
-
-        reward = scored + 10 if won else scored 
-        if terminated and not won: reward -= 10
-
+        
         # check if its illegal
         if(self.render_mode == 'human'):
             self.render()
